@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<solr xmlns:cinclude="http://apache.org/cocoon/include/1.0">
+	<!-- query values -->
+	<unparsedQuery>${unparsedQuery}</unparsedQuery>
+
+	<!-- Execute the cinclude query to solr-->
+	<cinclude:includexml>
+		<cinclude:src>
+		cocoon:/solrSearch-${start}-${rows}-${decodeQ}
+		</cinclude:src>
+	</cinclude:includexml>
+</solr>

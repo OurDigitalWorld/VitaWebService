@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map:sitemap xmlns:map="http://apache.org/cocoon/sitemap/1.0">
+
+  <!-- ========================= Components ================================ -->
+
+  <map:components>
+	<map:generators default="file"/>
+	<map:readers default="resource"/>
+	<map:serializers default="html">
+		<map:serializer logger="sitemap.serializer.links" name="links" src="org.apache.cocoon.serialization.LinkSerializer"/>
+		<map:serializer name="xml" logger="sitemap.serializer.xml" mime-type="text/xml; charset=utf-8" src="org.apache.cocoon.serialization.XMLSerializer">
+			<encoding>utf-8</encoding>
+		</map:serializer>
+		<map:serializer name="html" logger="sitemap.serializer.html" mime-type="text/html; charset=utf-8" pool-max="${html-serializer.pool-max}" src="org.apache.cocoon.serialization.HTMLSerializer">
+			<doctype-public>-//W3C//DTD HTML 4.01 Transitional//EN</doctype-public>
+			<doctype-system>http://www.w3.org/TR/html4/loose.dtd</doctype-system>
+			<encoding>UTF-8</encoding>
+			<version>4.01</version>
+		</map:serializer>
+	</map:serializers>
+
+    <map:selectors default="browser"/>
+    <map:matchers default="wildcard"/>
+	<!-- 9 Jan 2007 testing adding caching WL-->
+	<map:pipes default="caching"/>
+ </map:components>
+
+<!-- ====  Flowscript calls ===== -->
+<map:flow language="javascript">
+  <!-- Flow will use the javascript functions defined in search.js -->
+  <map:script src="flow/index.js"/>
+</map:flow>
+
+<!-- ========================== Pipelines ================================ -->
+
+ <map:pipelines>
+ 
+	<map:pipeline type="noncaching">
+      <!--+
+          | produces the screens called by the flowscript
+          +-->
+		<!--update -->
+      <map:match pattern="style/solrResponse">
+        <map:generate type="jx" src="style/solrResponse.xsl"/>
+		<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>    
+      <map:match pattern="style/solrPDResponse">
+        <map:generate type="jx" src="style/solrPDResponse.xsl"/>
+		<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>
+
+		<!-- delete -->
+      <map:match pattern="style/solrDMDelResponse">
+        <map:generate type="jx" src="style/solrDMDelResponse.xsl"/>
+		<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>
+      <map:match pattern="style/solrPubDelResponse">
+        <map:generate type="jx" src="style/solrPubDelResponse.xsl"/>
+		<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>
+      <map:match pattern="style/solrPartDelResponse">
+        <map:generate type="jx" src="style/solrPartDelResponse.xsl"/>
+		<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>
+
+	  <!-- multipart index -->
+      <map:match pattern="style/solrParts">
+        <map:generate type="jx" src="style/solrParts.xsl"/>
+		<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>
+
+	  <!-- batch index -->
+      <map:match pattern="style/solrBatch">
+        <map:generate type="jx" src="style/solrBatch.xsl"/>
+		<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+
+	  <!-- bug off -->
+      <map:match pattern="style/solrNoResponse">
+        <map:generate type="jx" src="style/solrNoResponse.xsl"/>
+		<map:serialize type="xml"/>
+      </map:match>
+	</map:pipeline>
+
+<!-- main pipelines -->
+	<map:pipeline type="noncaching">
+		<map:match pattern="update*">
+			<map:call function="main">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="parts*">
+			<map:call function="parts">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="batch*">
+			<map:call function="batch">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		
+		<map:match pattern="deletePart*">
+			<map:call function="deletePart">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="delete*">
+			<map:call function="deleteRecord">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+	</map:pipeline>
+ </map:pipelines>
+</map:sitemap>

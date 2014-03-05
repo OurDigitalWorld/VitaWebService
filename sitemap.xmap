@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map:sitemap xmlns:map="http://apache.org/cocoon/sitemap/1.0">
+
+  <!-- ========================= Components ================================ -->
+
+  <map:components>
+	  <map:generators default="file">
+		<map:generator name="tika" src="org.ourontario.cocoon.generation.TikaGenerator"/>
+	  </map:generators>
+
+  	<map:readers default="resource"/>
+  	<map:serializers default="html">
+  		<map:serializer logger="sitemap.serializer.links" name="links" src="org.apache.cocoon.serialization.LinkSerializer"/>
+  		<map:serializer name="xml" logger="sitemap.serializer.xml" mime-type="text/xml; charset=utf-8" src="org.apache.cocoon.serialization.XMLSerializer">
+  			<encoding>utf-8</encoding>
+  		</map:serializer>
+  		<map:serializer name="applicationxml" logger="sitemap.serializer.xml" mime-type="application/xml; charset=utf-8" src="org.apache.cocoon.serialization.XMLSerializer">
+  			<encoding>utf-8</encoding>
+  		</map:serializer>
+  		<map:serializer name="html" logger="sitemap.serializer.html" mime-type="text/html; charset=utf-8" pool-max="${html-serializer.pool-max}" src="org.apache.cocoon.serialization.HTMLSerializer">
+  			<doctype-public>-//W3C//DTD XHTML 1.1//EN</doctype-public>
+  			<doctype-system>-http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd</doctype-system>
+  			<encoding>UTF-8</encoding>
+  			<version>1.1</version>
+  		</map:serializer>
+  		<map:serializer name="xhtml" logger="sitemap.serializer.xhtml" mime-type="text/html; charset=utf-8" pool-max="${html-serializer.pool-max}" src="org.apache.cocoon.serialization.XMLSerializer">
+  			<doctype-public>-//W3C//DTD XHTML 1.0 Strict//EN</doctype-public>
+  			<doctype-system>-http://www.w3.org/TR/xhtml11/DTD/xhtml11-strict.dtd</doctype-system>
+  			<encoding>UTF-8</encoding>
+  			<version>1.1</version>
+  		</map:serializer>
+  		<map:serializer name="rdfa" logger="sitemap.serializer.html" mime-type="text/html; charset=utf-8" pool-max="${html-serializer.pool-max}" src="org.apache.cocoon.serialization.HTMLSerializer">
+  			<doctype-public>-//W3C//DTD XHTML+RDFa 1.0//EN</doctype-public>
+  			<doctype-system>http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd</doctype-system>
+  			<encoding>utf-8</encoding>
+  			<version>1.1</version>
+  		</map:serializer>
+  		<map:serializer name="rss" logger="sitemap.serializer.xml" mime-type="application/rss+xml; charset=utf-8" src="org.apache.cocoon.serialization.XMLSerializer">
+  			<encoding>utf-8</encoding>
+  		</map:serializer>
+  		<map:serializer name="atom" logger="sitemap.serializer.xml" mime-type="application/atom+xml; charset=utf-8" src="org.apache.cocoon.serialization.XMLSerializer">
+  			<encoding>utf-8</encoding>
+  		</map:serializer>
+  		<map:serializer name="kml" logger="sitemap.serializer.html" mime-type="application/vnd.google-earth.kml+xml; charset=utf-8" pool-max="${html-serializer.pool-max}" src="org.apache.cocoon.serialization.XMLSerializer">
+  			<encoding>utf-8</encoding>
+  			<version>1.1</version>
+  		</map:serializer>
+		<map:serializer name="text" src="org.apache.cocoon.serialization.TextSerializer" mime-type="text/plain"  logger="sitemap.serializer.text" >
+  			<encoding>utf-8</encoding>
+  		</map:serializer>
+  	</map:serializers>
+
+    <map:selectors default="browser"/>
+    <map:matchers default="wildcard"/>
+	<!-- 9 Jan 2007 testing adding caching WL-->
+	<map:pipes default="caching"/>
+	<map:transformers>
+		<map:transformer name="log" src="org.apache.cocoon.transformation.LogTransformer" />
+	</map:transformers>
+ </map:components>
+
+<!-- ====  Flowscript calls ===== -->
+<map:flow language="javascript">
+  <map:script src="flow/search.js"/>
+</map:flow>
+
+<!-- ========================== Pipelines ================================ -->
+
+ <map:pipelines>
+ 	
+ 	<map:component-configurations>
+ 		<global-variables>
+ 			<!-- solr variable must end with /select/? -->
+ 			<solr>http://localhost:8080/solr/vitapub_Test/select?</solr>
+ 			<solrParts>http://localhost:8080/solr/vitaParts_Test/select?</solrParts>
+ 		</global-variables>
+ 	</map:component-configurations>
+ 	
+    <map:pipeline>
+      <!-- produces the screens called by the flowscript -->
+      <map:match pattern="style/solrQueryValues">
+        <map:generate type="jx" src="style/solrQueryValues.xsl"/>
+      	<map:transform type="cinclude" />
+      	<map:transform type="xslt" src="style/solrDidYouMean.xsl"/>
+      	<map:transform type="cinclude" />
+      	<map:transform type="xslt" src="style/solrMultiPart.xsl">
+    		<map:parameter name="solrParts" value="{global:solrParts}"/>
+		</map:transform>
+      	<map:transform type="cinclude" />
+		<map:transform type="xslt" src="style/search_result.xsl"/>
+		<map:serialize type="xhtml"/>
+		<!--<map:serialize type="xml"/>-->
+      </map:match>
+      <map:match pattern="style/essayQueryValues">
+        <map:generate type="jx" src="style/solrQueryValues.xsl"/>
+      	<map:transform type="cinclude" />
+      	<map:transform type="xslt" src="style/solrDidYouMean.xsl"/>
+      	<map:transform type="cinclude" />
+		<map:serialize type="xml"/>
+      </map:match>
+    	
+      <map:match pattern="style/mobileQueryValues">
+        <map:generate type="jx" src="style/mobileQueryValues.xsl"/>
+      	<map:transform type="cinclude" />
+      	<map:transform type="xslt" src="style/solrDidYouMean.xsl"/>
+      	<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+
+	<map:match pattern="style/publicQueryValues">
+        <map:generate type="jx" src="style/publicQueryValues.xsl"/>
+      	<map:transform type="cinclude" />
+      	<map:transform type="xslt" src="style/solrDidYouMean.xsl"/>
+      	<map:transform type="cinclude" />
+      	<map:transform type="xslt" src="style/solrMultiPart.xsl">
+    		<map:parameter name="solrParts" value="{global:solrParts}"/>
+		</map:transform>
+      	<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+       	
+      <map:match pattern="style/solrPartsSearchValues">
+        <map:generate type="jx" src="style/solrPartsSearchValues.xsl"/>
+      	<map:transform type="cinclude" />
+      	<!--<map:transform type="xslt" src="style/solrDidYouMean.xsl"/>
+      	<map:transform type="cinclude" />-->
+		<map:serialize type="xml"/>
+      </map:match>
+	  
+    	<map:match pattern="style/solrCount">
+    	<map:generate type="jx" src="style/solrCount.xsl">
+    		<map:parameter name="solr" value="{global:solr}"/>
+    	</map:generate>
+    	<map:transform type="cinclude" />
+    	<map:serialize type="xml"/>
+    </map:match>
+    <map:match pattern="style/solrCountGeo">
+    	<map:generate type="jx" src="style/solrCountGeo.xsl">
+    		<map:parameter name="solr" value="{global:solr}"/>
+    		<map:parameter name="use-request-parameters" value="true"/>
+    	</map:generate>
+    	<map:transform type="cinclude" />
+    	<map:serialize type="xml"/>
+    </map:match>
+	<map:match pattern="style/solrRSS">
+			<map:generate type="jx" src="style/solrRSS.xsl">
+			<map:parameter name="use-request-parameters" value="true"/>
+		</map:generate>
+		<map:transform type="cinclude" />
+		<map:transform type="xslt" src="style/RSSdate.xsl"/><!---->
+		<map:serialize type="xml"/>
+	</map:match>
+	<map:match pattern="style/solrAtom">
+			<map:generate type="jx" src="style/solrAtom.xsl">
+			<map:parameter name="use-request-parameters" value="true"/>
+		</map:generate>
+		<map:transform type="cinclude" />
+		<map:transform type="xslt" src="style/Atomdate.xsl"/><!---->
+		<map:serialize type="xml"/>
+	</map:match>
+	<map:match pattern="style/solrDublinCore">
+			<map:generate type="jx" src="style/solrDublinCore.xsl">
+			<map:parameter name="use-request-parameters" value="true"/>
+		</map:generate>
+		<map:transform type="cinclude" />
+		<map:transform type="xslt" src="style/DublinCore.xsl"/><!---->
+		<map:serialize type="xml"/>
+	</map:match>
+    <map:match pattern="style/solrKML">
+    	<map:generate type="jx" src="style/solrQueryValuesShort.xml"/>
+    	<map:transform type="cinclude" />
+    	<!--<map:serialize type="xml"/>-->
+    	<map:transform type="xslt" src="format/kml.xsl" />
+    	<map:serialize type="kml"/>
+    </map:match>
+
+      <map:match pattern="style/solrPrevNext">
+    	<map:generate type="jx" src="style/solrPrevNext.xsl">
+    		<map:parameter name="solr" value="{global:solr}"/>
+    		<map:parameter name="use-request-parameters" value="true"/>
+    	</map:generate>
+		<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+      <map:match pattern="style/publicPrevNext">
+    	<map:generate type="jx" src="style/publicPrevNext.xsl">
+    		<map:parameter name="solr" value="{global:solr}"/>
+    		<map:parameter name="use-request-parameters" value="true"/>
+    	</map:generate>
+		<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+
+      <map:match pattern="style/solrPublicSubjects">
+        <map:generate type="jx" src="style/solrPublicSubjects.xsl"/>
+		<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+      <map:match pattern="style/solrPublicChecklists">
+        <map:generate type="jx" src="style/solrPublicChecklists.xsl"/>
+		<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+      <map:match pattern="style/solrPublicSlideshow">
+        <map:generate type="jx" src="style/solrPublicSlideshow.xsl"/>
+		<map:transform type="cinclude" /><!---->
+		<map:serialize type="xml"/>
+      </map:match>
+	</map:pipeline>
+
+	<map:pipeline>
+		<map:match pattern="index/*">
+			<map:mount check-reload="yes" src="index/sitemap.xmap" uri-prefix="index"/>
+		</map:match>
+		<map:match pattern="results*">
+			<map:call function="main">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="essayResults*">
+			<map:call function="essayResults">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="mobileResults*">
+			<map:call function="mobileResults">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+
+		<map:match pattern="publicResults*">
+			<map:call function="publicResults">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+
+		<map:match pattern="mparts*">
+			<map:call function="parts">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+
+		<map:match pattern="prevnext*">
+			<map:call function="prevnext"/>
+		</map:match>
+		<map:match pattern="publicPrevNext*">
+			<map:call function="publicPrevNext"/>
+		</map:match>
+		<map:match pattern="publicSubjects*">
+			<map:call function="publicSubjects">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="publicNames*">
+			<map:call function="publicNames">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="checklists*">
+			<map:call function="checklists"/>
+		</map:match>
+		<map:match pattern="slideshow*">
+			<map:call function="slideshow"/>
+		</map:match>
+		<map:match pattern="rss*">
+			<map:call function="rss">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="atom*">
+			<map:call function="atom"/>
+		</map:match>
+		<map:match pattern="dc*">
+			<map:call function="dc">
+				<map:parameter name="use-request-parameters" value="true"/>
+				<map:parameter name="urlString" value="{request:queryString}" />
+			</map:call>
+		</map:match>
+
+		<map:match pattern="solrSearch-*-*-*-*">
+			<map:call function="solrSearch">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+				<map:parameter name="spellQ" value="{4}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="publicSearch-*-*-*-*">
+			<map:call function="publicSearch">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+				<map:parameter name="spellQ" value="{4}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="mobileSearch-*-*-*-*">
+			<map:call function="mobileSearch">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+				<map:parameter name="spellQ" value="{4}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="partsSearch-*">
+			<map:call function="partsSearch">
+				<map:parameter name="q" value="{1}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="solrCountGeo-*-*-*">
+			<map:call function="solrCountGeo">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+				<map:parameter name="solr" value="{global:solr}"/>
+			</map:call>
+		</map:match>
+		<map:match pattern="solrDidYouMean-*-*-*-*-*-*">
+			<map:call function="solrDidYouMean">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+				<map:parameter name="boolean" value="{4}" />
+				<map:parameter name="collation" value="{5}" />
+				<map:parameter name="spellQ" value="{6}" />
+				<map:parameter name="solr" value="{global:solr}"/>
+			</map:call>
+		</map:match>
+		<map:match pattern="publicRSS-*">
+			<map:call function="publicRSS">
+				<map:parameter name="q" value="{1}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="publicAtom-*">
+			<map:call function="publicAtom">
+				<map:parameter name="q" value="{1}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="publicDublinCore-*-*-*">
+			<map:call function="publicDublinCore">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="publicChecklists-*">
+			<map:call function="publicChecklists">
+				<map:parameter name="q" value="{1}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="publicSlideshow-*-*">
+			<map:call function="publicSlideshow">
+				<map:parameter name="q" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="dmPrevNext-*-*-*">
+			<map:call function="dmPrevNext">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="incPublicPrevNext-*-*-*">
+			<map:call function="incPublicPrevNext">
+				<map:parameter name="start" value="{1}" />
+				<map:parameter name="rows" value="{2}" />
+				<map:parameter name="q" value="{3}" />
+			</map:call>
+		</map:match>
+		<map:match pattern="extract*">
+			<map:generate type="jx" src="style/extract.xsl">
+				<map:parameter name="use-request-parameters" value="true"/>
+			</map:generate>
+			<map:transform type="cinclude" />
+			<map:serialize type="text"/>
+		</map:match>
+		<map:match pattern="tikagenerator/*/*.xml">
+		  <map:generate type="tika" src="file:///E:/temp/{2}.{1}"/>
+		  <map:serialize type="xml"/>
+		</map:match>
+		<map:match pattern="resize-*-*/*">
+		  <map:read type="image-op-resize" src="file:///E:/temp/{3}" >
+		    <map:parameter name="size-width" value="{1}"/>
+		    <map:parameter name="size-height" value="{2}"/>
+		  </map:read>
+		</map:match>
+		<map:match pattern="scale-*-*/*">
+		  <map:read type="image-op-scale" src="file:///E:/temp/{3}" >
+		    <map:parameter name="scale-scale" value="{1}"/>
+		    <map:parameter name="output-format" value="{2}"/>
+		  </map:read>
+		</map:match>
+	</map:pipeline>
+
+ </map:pipelines>
+</map:sitemap>
